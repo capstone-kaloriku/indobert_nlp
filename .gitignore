@@ -1,0 +1,72 @@
+# ==============================================================================
+# Gitignore for IndoBERT NLP Capstone Project
+# ==============================================================================
+
+# --- Python Cache & Compiled Files ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.mypy_cache/
+
+# --- Virtual Environments ---
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# --- Machine Learning Models & Heavy Checkpoints ---
+# Ignore model weight binaries and directories
+*.bin
+*.pt
+*.pth
+*.safetensors
+*.ckpt
+*.h5
+*.pb
+*.onnx
+
+# Ignore Hugging Face / Transformers cache directory
+.cache/
+
+# Keep the models/ directory structure but ignore the actual local trained models
+models/*
+!models/.gitkeep
+
+# --- Jupyter Notebooks ---
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+*.ipynb_checkpoints
+
+# --- Configuration & Environment Variables ---
+.env
+.env.local
+.env.*
+.secrets
+*.secret
+
+# --- IDEs and Editors ---
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*~
+
+# --- OS Specific ---
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# --- Project Specific Logs / Temp Files ---
+output.txt
+signature.txt

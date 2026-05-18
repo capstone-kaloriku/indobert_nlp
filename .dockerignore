@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.git
+.gitignore
+.dockerignore
+.ipynb_checkpoints/
+*.ipynb
+*.txt
+*.pyc
