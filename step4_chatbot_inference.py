@@ -29,7 +29,14 @@ class ChatbotSystem:
             self.exercise_db = None
             
         print("Membuat Retriever Engine (TF-IDF)...")
-        self.vectorizer = TfidfVectorizer()
+        # Daftar kata umum bahasa Indonesia yang harus diabaikan saat mencari nama makanan
+        INDONESIAN_STOPWORDS = [
+            "saya", "kamu", "dia", "mereka", "kita", "kami", "anda", "aku",
+            "yang", "di", "ke", "dari", "dan", "atau", "dengan", "untuk", "pada",
+            "adalah", "itu", "ini", "buat", "dong", "ya", "sih", "berapa", "kalori",
+            "tinggi", "berat", "umur", "tahun", "tubuh", "badan", "hitung"
+        ]
+        self.vectorizer = TfidfVectorizer(stop_words=INDONESIAN_STOPWORDS)
         self.tfidf_matrix = self.vectorizer.fit_transform(self.kb['nama_makanan'])
         
         print("Memuat Model IndoBERT...")
@@ -59,7 +66,7 @@ class ChatbotSystem:
         similarities = cosine_similarity(query_vec, self.tfidf_matrix)[0]
         best_idx = similarities.argmax()
         
-        if similarities[best_idx] > 0.3:
+        if similarities[best_idx] > 0.5:
             return self.kb.iloc[best_idx]
         return None
 
@@ -112,6 +119,16 @@ class ChatbotSystem:
         food_data = self.extract_food(user_input)
         
         if food_data is None:
+            # Pengecekan apakah user bertanya tentang kebutuhan kalori tubuh/BMR/TDEE sendiri
+            personal_keywords = ["tubuh saya", "kebutuhan saya", "berat", "tinggi", "umur", "usia", "bmr", "tdee", "kalori harian", "kebutuhan kalori"]
+            if any(kw in user_input.lower() for kw in personal_keywords):
+                prompt = (
+                    f"User bertanya tentang kebutuhan kalori tubuhnya / BMR: '{user_input}'. "
+                    f"Jawablah dengan ramah, bantu hitung BMR (Basal Metabolic Rate) dan TDEE (Total Daily Energy Expenditure) "
+                    f"jika ada info berat, tinggi, usia, atau jenis kelamin di dalam pertanyaan. Berikan penjelasan kesehatan yang informatif."
+                )
+                return self.ask_llm(prompt)
+            
             prompt = f"User bertanya tentang makanan: '{user_input}'. Saya tidak menemukan datanya di database. Mohon maafkan dan minta user untuk mencoba makanan lain atau bertanya hal umum tentang kesehatan."
             return self.ask_llm(prompt)
         
