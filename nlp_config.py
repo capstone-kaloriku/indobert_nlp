@@ -32,7 +32,11 @@ MODEL_OUTPUT_DIR = MODELS_DIR / "indobert_intent_classifier"
 INDOBERT_MODEL_NAME = "indobenchmark/indobert-base-p1"
 
 # --- LLM SETTINGS (NVIDIA NIM) ---
-NVIDIA_API_KEY = "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" 
+NVIDIA_API_KEY = os.environ.get("NVIDIA_API_KEY", "")
+if not NVIDIA_API_KEY:
+    print("⚠️  WARNING: NVIDIA_API_KEY environment variable not set. LLM features will fail.")
+    print("   Set it with: export NVIDIA_API_KEY=nvapi-xxxxx  (Linux/Mac)")
+    print("   Or:          $env:NVIDIA_API_KEY='nvapi-xxxxx'  (PowerShell)")
 MODEL_LLM = "meta/llama-3.3-70b-instruct"
 
 # --- DEPRECATED GEMINI SETTINGS ---

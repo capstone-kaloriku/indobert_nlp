@@ -7,5 +7,15 @@ __pycache__/
 .dockerignore
 .ipynb_checkpoints/
 *.ipynb
-*.txt
-*.pyc
+
+# Training scripts (tidak dibutuhkan di production)
+step1_build_knowledge_base.py
+step2_generate_intent_data.py
+step3_train_indobert.py
+
+# Training checkpoints (~1.5GB, BESAR — hanya model final yang dibutuhkan)
+models/indobert_intent_classifier/checkpoint-*/
+
+# File output / notes
+output.txt
+signature.txt

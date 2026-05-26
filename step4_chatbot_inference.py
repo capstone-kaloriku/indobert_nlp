@@ -34,7 +34,8 @@ class ChatbotSystem:
             "saya", "kamu", "dia", "mereka", "kita", "kami", "anda", "aku",
             "yang", "di", "ke", "dari", "dan", "atau", "dengan", "untuk", "pada",
             "adalah", "itu", "ini", "buat", "dong", "ya", "sih", "berapa", "kalori",
-            "tinggi", "berat", "umur", "tahun", "tubuh", "badan", "hitung"
+            "tinggi", "berat", "umur", "tahun", "tubuh", "badan", "hitung",
+            "makanan", "resep", "menu", "sehat", "porsi", "siang", "makan"
         ]
         self.vectorizer = TfidfVectorizer(stop_words=INDONESIAN_STOPWORDS)
         self.tfidf_matrix = self.vectorizer.fit_transform(self.kb['nama_makanan'])
@@ -129,7 +130,12 @@ class ChatbotSystem:
                 )
                 return self.ask_llm(prompt)
             
-            prompt = f"User bertanya tentang makanan: '{user_input}'. Saya tidak menemukan datanya di database. Mohon maafkan dan minta user untuk mencoba makanan lain atau bertanya hal umum tentang kesehatan."
+            prompt = (
+                f"User bertanya tentang topik kesehatan/nutrisi: '{user_input}'. "
+                f"Meskipun data spesifik tidak ditemukan di database menu lokal kami, "
+                f"jawablah pertanyaan tersebut menggunakan pengetahuan umum Anda tentang kesehatan dan nutrisi "
+                f"secara informatif, ramah, dan praktis."
+            )
             return self.ask_llm(prompt)
         
         nama = food_data['nama_makanan'].title()

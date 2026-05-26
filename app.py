@@ -2,6 +2,7 @@ import os
 import sys
 import pandas as pd
 from pathlib import Path
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
@@ -21,11 +22,31 @@ if current_dir not in sys.path:
 from nlp_config import *
 from step4_chatbot_inference import ChatbotSystem
 
+# ============================================================
+# Lifespan — menggantikan @app.on_event("startup") yang deprecated
+# ============================================================
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Load model saat startup, cleanup saat shutdown."""
+    global chatbot
+    print("Initializing Chatbot System (IndoBERT models & datasets)...")
+    try:
+        chatbot = ChatbotSystem()
+        print("✅ Chatbot successfully initialized!")
+    except Exception as e:
+        print(f"❌ CRITICAL ERROR initializing ChatbotSystem: {e}")
+        import traceback
+        traceback.print_exc()
+    yield
+    # Cleanup saat shutdown (jika perlu)
+    print("Shutting down chatbot system...")
+
 # Initialize FastAPI App
 app = FastAPI(
     title="NutriFit AI - IndoBERT Health & Nutrition API",
     description="Backend API serving IndoBERT intent classifier and RAG-based Health Chatbot",
-    version="2.0.0"
+    version="2.0.0",
+    lifespan=lifespan
 )
 
 # ============================================================
@@ -36,6 +57,9 @@ ALLOWED_ORIGINS = [
     "http://localhost:3001",        # Next.js alternate port
     "http://127.0.0.1:3000",
     "https://*.vercel.app",         # Vercel deployments
+    "https://*.run.app",            # Google Cloud Run
+    "https://*.onrender.com",       # Render deployments
+    "https://*.up.railway.app",     # Railway deployments
 ]
 
 # Jika ada env variable ALLOWED_ORIGINS, gunakan itu (comma-separated)
@@ -54,16 +78,7 @@ app.add_middleware(
 # Global variables
 chatbot = None
 
-@app.on_event("startup")
-def startup_event():
-    global chatbot
-    print("Initializing Chatbot System (IndoBERT models & datasets)...")
-    try:
-        chatbot = ChatbotSystem()
-        print("Chatbot successfully initialized!")
-    except Exception as e:
-        print(f"CRITICAL ERROR initializing ChatbotSystem: {e}")
-        # Keep running so /health can report the failure and logs can be inspected
+# (startup logic sudah dipindah ke lifespan context manager di atas)
 
 # ============================================================
 # Request & Response Schemas
@@ -113,11 +128,15 @@ def get_health():
             "status": "unhealthy", 
             "message": "Chatbot model failed to load. Check server logs."
         }
+    try:
+        device_type = str(chatbot.model.device.type) if hasattr(chatbot.model, 'device') else "cpu"
+    except Exception:
+        device_type = "unknown"
     return {
         "status": "healthy",
         "model_loaded": True,
         "active_llm": MODEL_LLM,
-        "cuda_available": chatbot.model.device.type == "cuda"
+        "device": device_type
     }
 
 

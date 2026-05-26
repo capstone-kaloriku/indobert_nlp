@@ -22,13 +22,15 @@ RUN pip install --no-cache-dir -U pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # 7. Salin seluruh isi folder project ke dalam container di /app/
-# Catatan: Kita tidak perlu menyalin folder "dataset" mentah karena data yang dibutuhkan 
-# untuk runtime (CSV & model) sudah berada di dalam folder ini (di data/ dan models/)
+# File yang tidak dibutuhkan sudah di-exclude via .dockerignore
 COPY . /app/
 
 # 8. Buka port aplikasi (default Cloud Run adalah 8080)
 EXPOSE 8080
 
-# 9. Jalankan aplikasi FastAPI menggunakan python script
-# PENTING: Jalankan dari folder /app agar path relatif ter-resolve dengan benar
+# 9. Health check — Cloud Run dan Docker akan cek endpoint ini
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# 10. Jalankan aplikasi FastAPI menggunakan python script
 CMD ["python", "app.py"]
