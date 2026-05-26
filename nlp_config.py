@@ -2,7 +2,10 @@ import os
 from pathlib import Path
 
 # Mendapatkan lokasi direktori tempat file nlp_config.py berada secara dinamis
-NLP_DIR = Path(__file__).parent.resolve()
+try:
+    NLP_DIR = Path(__file__).parent.resolve()
+except NameError:
+    NLP_DIR = Path(os.getcwd()).resolve()
 
 # PROJECT_ROOT berada satu level di atas NLP_DIR (yaitu folder Capstone di local)
 PROJECT_ROOT = NLP_DIR.parent.resolve()
@@ -31,13 +34,25 @@ MODEL_OUTPUT_DIR = MODELS_DIR / "indobert_intent_classifier"
 
 INDOBERT_MODEL_NAME = "indobenchmark/indobert-base-p1"
 
-# --- LLM SETTINGS (NVIDIA NIM) ---
-NVIDIA_API_KEY = os.environ.get("NVIDIA_API_KEY", "")
-if not NVIDIA_API_KEY:
-    print("⚠️  WARNING: NVIDIA_API_KEY environment variable not set. LLM features will fail.")
-    print("   Set it with: export NVIDIA_API_KEY=nvapi-xxxxx  (Linux/Mac)")
-    print("   Or:          $env:NVIDIA_API_KEY='nvapi-xxxxx'  (PowerShell)")
-MODEL_LLM = "meta/llama-3.3-70b-instruct"
+# --- LOAD ENVIRONMENT VARIABLES FROM .ENV ---
+# Membaca file .env secara manual jika ada untuk mengisi environment variables
+env_path = NLP_DIR / ".env"
+if env_path.exists():
+    with open(env_path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, val = line.split("=", 1)
+                os.environ[key.strip()] = val.strip().strip('"').strip("'")
+
+# --- LLM SETTINGS (GROQ CLOUD ONLY) ---
+ACTIVE_LLM_KEY = os.environ.get("GROQ_API_KEY", os.environ.get("LLM_API_KEY", ""))
+ACTIVE_LLM_URL = os.environ.get("LLM_BASE_URL", "https://api.groq.com/openai/v1")
+ACTIVE_LLM_MODEL = os.environ.get("LLM_MODEL_NAME", "llama-3.3-70b-versatile")
+
+# Menjaga kompatibilitas dengan variabel lama
+NVIDIA_API_KEY = ACTIVE_LLM_KEY
+MODEL_LLM = ACTIVE_LLM_MODEL
 
 # --- DEPRECATED GEMINI SETTINGS ---
 # GEMINI_API_KEY = "AIzaSyAkiv37rewhUmA_lcRsbyBMWK40tEZu4Rc"

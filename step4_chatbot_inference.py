@@ -41,13 +41,26 @@ class ChatbotSystem:
         self.tfidf_matrix = self.vectorizer.fit_transform(self.kb['nama_makanan'])
         
         print("Memuat Model IndoBERT...")
-        self.tokenizer = AutoTokenizer.from_pretrained(str(MODEL_OUTPUT_DIR))
-        self.model = AutoModelForSequenceClassification.from_pretrained(str(MODEL_OUTPUT_DIR))
+        # Coba load dari folder lokal dulu (biar cepet saat testing lokal)
+        local_model_path = MODEL_OUTPUT_DIR
+        local_safetensors = local_model_path / "model.safetensors"
         
-        print("Menginisialisasi Nvidia NIM RAG Engine...")
+        if local_model_path.exists() and local_safetensors.exists():
+            print(f"✅ Memuat model dari folder lokal: {local_model_path}")
+            model_source = str(local_model_path)
+        else:
+            # Jika lokal tidak ada (seperti di server Railway), download dari Hugging Face
+            hf_repo = os.environ.get("HF_MODEL_REPO", "s4usan/indobert-intent-classifier")
+            print(f"☁️ Memuat model dari Hugging Face Hub: {hf_repo}")
+            model_source = hf_repo
+            
+        self.tokenizer = AutoTokenizer.from_pretrained(model_source)
+        self.model = AutoModelForSequenceClassification.from_pretrained(model_source)
+        
+        print(f"Menginisialisasi LLM RAG Engine ({ACTIVE_LLM_URL}) untuk model: {ACTIVE_LLM_MODEL}...")
         self.llm_client = OpenAI(
-            base_url="https://integrate.api.nvidia.com/v1",
-            api_key=NVIDIA_API_KEY.strip(),
+            base_url=ACTIVE_LLM_URL,
+            api_key=ACTIVE_LLM_KEY.strip(),
             timeout=20.0
         )
         
@@ -72,7 +85,10 @@ class ChatbotSystem:
         return None
 
     def ask_llm(self, prompt):
-        models_to_try = [MODEL_LLM, "meta/llama-3.1-8b-instruct", "minimaxai/minimax-m2.7"]
+        # Masukkan model utama dan alternatif Groq ke list
+        models_to_try = [ACTIVE_LLM_MODEL, "llama-3.3-70b-versatile", "openai/gpt-oss-120b", "llama-3.1-8b-instant"]
+        provider_name = "Groq Cloud"
+            
         unique_models = []
         for m in models_to_try:
             if m not in unique_models:
@@ -94,10 +110,10 @@ class ChatbotSystem:
                 )
                 return completion.choices[0].message.content
             except Exception as e:
-                print(f"[Warning] Gagal menghubungi model {model}: {e}. Mencoba model alternatif...")
+                print(f"[Warning] Gagal menghubungi model {model} via {provider_name}: {e}. Mencoba model alternatif...")
                 last_error = e
         
-        return f"Maaf, sedang ada kendala koneksi ke Nvidia NIM. {str(last_error)}"
+        return f"Maaf, sedang ada kendala koneksi ke {provider_name}. {str(last_error)}"
 
     def generate_response(self, user_input):
         intent = self.get_intent(user_input)

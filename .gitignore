@@ -70,3 +70,8 @@ desktop.ini
 # --- Project Specific Logs / Temp Files ---
 output.txt
 signature.txt
+
+# --- Temporary/Helper Notebook Scripts ---
+fix_notebook_groq.py
+fix_notebook_llm.py
+sync_notebook.py
