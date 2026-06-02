@@ -5,7 +5,7 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, FileResponse
 from pydantic import BaseModel
 from typing import Optional, List
 import uvicorn
@@ -32,9 +32,9 @@ async def lifespan(app: FastAPI):
     print("Initializing Chatbot System (IndoBERT models & datasets)...")
     try:
         chatbot = ChatbotSystem()
-        print("✅ Chatbot successfully initialized!")
+        print("[OK] Chatbot successfully initialized!")
     except Exception as e:
-        print(f"❌ CRITICAL ERROR initializing ChatbotSystem: {e}")
+        print(f"[ERROR] CRITICAL ERROR initializing ChatbotSystem: {e}")
         import traceback
         traceback.print_exc()
     yield
@@ -304,6 +304,98 @@ def get_exercises(
         results = df.fillna("").to_dict(orient="records")
         
         return ExerciseResponse(results=results, total=len(results))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- 6. DATASET ACCESS ENDPOINTS ---
+
+@app.get("/api/dataset/food/download")
+def download_food_dataset():
+    """
+    Mengunduh file raw CSV unified_knowledge_base.csv.
+    """
+    file_path = KNOWLEDGE_BASE_PATH
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File dataset makanan tidak ditemukan.")
+    return FileResponse(
+        path=file_path, 
+        filename="unified_knowledge_base.csv", 
+        media_type="text/csv"
+    )
+
+
+@app.get("/api/dataset/exercise/download")
+def download_exercise_dataset():
+    """
+    Mengunduh file raw CSV exercise_calorie_data.csv.
+    """
+    file_path = EXERCISE_DB_PATH
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File dataset olahraga tidak ditemukan.")
+    return FileResponse(
+        path=file_path, 
+        filename="exercise_calorie_data.csv", 
+        media_type="text/csv"
+    )
+
+
+@app.get("/api/dataset/food/list")
+def list_food_dataset(
+    page: int = Query(1, ge=1, description="Halaman ke-n"),
+    limit: int = Query(50, ge=1, le=100, description="Jumlah data per halaman")
+):
+    """
+    Mendapatkan list data makanan dengan paginasi.
+    """
+    if chatbot is None or chatbot.kb is None:
+        raise HTTPException(status_code=503, detail="Dataset makanan belum termuat.")
+    
+    try:
+        total_records = len(chatbot.kb)
+        start_idx = (page - 1) * limit
+        end_idx = start_idx + limit
+        
+        sliced_df = chatbot.kb.iloc[start_idx:end_idx].fillna("")
+        records = sliced_df.to_dict(orient="records")
+        
+        return {
+            "page": page,
+            "limit": limit,
+            "total_records": total_records,
+            "total_pages": (total_records + limit - 1) // limit,
+            "data": records
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/dataset/exercise/list")
+def list_exercise_dataset(
+    page: int = Query(1, ge=1, description="Halaman ke-n"),
+    limit: int = Query(50, ge=1, le=100, description="Jumlah data per halaman")
+):
+    """
+    Mendapatkan list data olahraga dengan paginasi.
+    """
+    if chatbot is None or chatbot.exercise_db is None:
+        raise HTTPException(status_code=503, detail="Dataset olahraga belum termuat.")
+    
+    try:
+        total_records = len(chatbot.exercise_db)
+        start_idx = (page - 1) * limit
+        end_idx = start_idx + limit
+        
+        sliced_df = chatbot.exercise_db.iloc[start_idx:end_idx].fillna("")
+        records = sliced_df.to_dict(orient="records")
+        
+        return {
+            "page": page,
+            "limit": limit,
+            "total_records": total_records,
+            "total_pages": (total_records + limit - 1) // limit,
+            "data": records
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

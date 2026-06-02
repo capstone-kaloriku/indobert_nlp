@@ -46,12 +46,12 @@ class ChatbotSystem:
         local_safetensors = local_model_path / "model.safetensors"
         
         if local_model_path.exists() and local_safetensors.exists():
-            print(f"✅ Memuat model dari folder lokal: {local_model_path}")
+            print(f"[LOCAL] Memuat model dari folder lokal: {local_model_path}")
             model_source = str(local_model_path)
         else:
             # Jika lokal tidak ada (seperti di server Railway), download dari Hugging Face
             hf_repo = os.environ.get("HF_MODEL_REPO", "s4usan/indobert-intent-classifier")
-            print(f"☁️ Memuat model dari Hugging Face Hub: {hf_repo}")
+            print(f"[HF] Memuat model dari Hugging Face Hub: {hf_repo}")
             model_source = hf_repo
             
         self.tokenizer = AutoTokenizer.from_pretrained(model_source)
