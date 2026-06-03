@@ -43,7 +43,7 @@ async def lifespan(app: FastAPI):
 
 # Initialize FastAPI App
 app = FastAPI(
-    title="NutriFit AI - IndoBERT Health & Nutrition API",
+    title="KalorAI - IndoBERT Health & Nutrition API",
     description="Backend API serving IndoBERT intent classifier and RAG-based Health Chatbot",
     version="2.0.0",
     lifespan=lifespan
